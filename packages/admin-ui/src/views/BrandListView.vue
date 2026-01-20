@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { getBrands, type Brand } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import LoadingSpinner from '../components/shared/LoadingSpinner.vue'
@@ -7,22 +7,31 @@ import ErrorBanner from '../components/shared/ErrorBanner.vue'
 import BrandCard from '../components/brands/BrandCard.vue'
 
 const { brandSlug, isAdmin } = useAuth()
-const brands = ref<Brand[]>([])
+const allBrands = ref<Brand[]>([])
 const loading = ref(true)
 const error = ref('')
+
+// Reactively filter brands based on auth state
+const brands = computed(() => {
+  console.log('Auth state:', { brandSlug: brandSlug.value, isAdmin: isAdmin.value })
+  console.log('All brands:', allBrands.value.map(b => b.slug))
+
+  if (isAdmin.value) {
+    return allBrands.value
+  }
+  if (brandSlug.value) {
+    const userBrand = brandSlug.value.toLowerCase()
+    const filtered = allBrands.value.filter(b => b.slug.toLowerCase() === userBrand)
+    console.log('Filtered to:', filtered.map(b => b.slug))
+    return filtered
+  }
+  return allBrands.value
+})
 
 onMounted(async () => {
   try {
     const data = await getBrands()
-    // Admins see all brands, regular users only see their own
-    if (isAdmin.value) {
-      brands.value = data.brands
-    } else if (brandSlug.value) {
-      const userBrand = brandSlug.value.toLowerCase()
-      brands.value = data.brands.filter(b => b.slug.toLowerCase() === userBrand)
-    } else {
-      brands.value = data.brands
-    }
+    allBrands.value = data.brands
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to load brands'
   } finally {
