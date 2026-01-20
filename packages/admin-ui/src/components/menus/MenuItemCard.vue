@@ -16,14 +16,25 @@ const emit = defineEmits<{
 
 const R2_BASE = 'https://pub-ed2976f5bd484b6580754e1d1fef1856.r2.dev'
 
+// Strip $ prefix from price for editing/display
+function stripDollar(price: string | number | undefined): string {
+  if (!price) return ''
+  return String(price).replace(/^\$/, '')
+}
+
+// Format price for display (no $ prefix since template adds it)
+function formatPrice(price: string | number | undefined): string {
+  return stripDollar(price)
+}
+
 const editName = ref(props.item.name)
-const editPrice = ref(String(props.item.price || ''))
+const editPrice = ref(stripDollar(props.item.price))
 const editDescription = ref(props.item.description || '')
 
 watch(() => props.editing, (isEditing) => {
   if (isEditing) {
     editName.value = props.item.name
-    editPrice.value = String(props.item.price || '')
+    editPrice.value = stripDollar(props.item.price)
     editDescription.value = props.item.description || ''
   }
 })
@@ -60,7 +71,7 @@ function getImageUrl(item: MenuItem): string | null {
     <div class="content">
       <template v-if="!editing">
         <div class="name font-medium">{{ item.name }}</div>
-        <div v-if="item.price" class="price text-primary">${{ item.price }}</div>
+        <div v-if="item.price" class="price text-primary">${{ formatPrice(item.price) }}</div>
         <div v-if="item.description" class="description text-muted text-sm">
           {{ item.description }}
         </div>
