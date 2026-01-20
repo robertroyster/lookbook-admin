@@ -1,0 +1,22 @@
+name = "lookbook-admin-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-17"
+account_id = "cd42ba0fcc5fcdd298c836c6b0fb038c"
+
+# R2 bucket bindings
+[[r2_buckets]]
+binding = "MENU_BUCKET"
+bucket_name = "menumanager"
+
+[[r2_buckets]]
+binding = "INTERNAL_BUCKET"
+bucket_name = "menumanager-internal"
+
+[vars]
+R2_PUBLIC_URL = "https://pub-ed2976f5bd484b6580754e1d1fef1856.r2.dev"
+
+# Production route (uncomment when deploying)
+# [env.production]
+# routes = [
+#   { pattern = "api.admin.lookbook.menu", custom_domain = true }
+# ]
