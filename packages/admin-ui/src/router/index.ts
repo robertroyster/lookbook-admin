@@ -38,16 +38,24 @@ const router = createRouter({
   ]
 })
 
-// Navigation guard for auth
+// Navigation guard for auth and brand access
 router.beforeEach((to, _from, next) => {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, brandSlug } = useAuth()
 
   if (to.meta.public) {
     next()
   } else if (!isAuthenticated.value) {
     next('/login')
   } else {
-    next()
+    // Check brand access - users can only access their own brand
+    const routeBrand = to.params.brand as string | undefined
+    if (routeBrand && brandSlug.value && routeBrand !== brandSlug.value) {
+      // Redirect to their own brand equivalent route
+      const newPath = to.path.replace(`/brands/${routeBrand}`, `/brands/${brandSlug.value}`)
+      next(newPath)
+    } else {
+      next()
+    }
   }
 })
 

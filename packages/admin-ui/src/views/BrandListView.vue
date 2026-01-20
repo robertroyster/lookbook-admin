@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { getBrands, type Brand } from '../lib/api'
+import { useAuth } from '../lib/auth'
 import LoadingSpinner from '../components/shared/LoadingSpinner.vue'
 import ErrorBanner from '../components/shared/ErrorBanner.vue'
 import BrandCard from '../components/brands/BrandCard.vue'
 
+const { brandSlug } = useAuth()
 const brands = ref<Brand[]>([])
 const loading = ref(true)
 const error = ref('')
@@ -12,7 +14,12 @@ const error = ref('')
 onMounted(async () => {
   try {
     const data = await getBrands()
-    brands.value = data.brands
+    // Filter to only show the user's brand
+    if (brandSlug.value) {
+      brands.value = data.brands.filter(b => b.slug === brandSlug.value)
+    } else {
+      brands.value = data.brands
+    }
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to load brands'
   } finally {
