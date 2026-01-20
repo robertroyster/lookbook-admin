@@ -183,3 +183,39 @@ export async function uploadImage(brand: string, file: File, filename?: string) 
 
   return data as { success: boolean; filename: string; url: string; size: number }
 }
+
+export interface DeployBrandRequest {
+  brandSlug: string
+  brandName: string
+  locationSlug: string
+  locationName: string
+  logoFile?: File | null
+}
+
+export async function deployBrand(params: DeployBrandRequest) {
+  const { getApiKey } = useAuth()
+  const apiKey = getApiKey()
+
+  const formData = new FormData()
+  formData.append('brandSlug', params.brandSlug)
+  formData.append('brandName', params.brandName)
+  formData.append('locationSlug', params.locationSlug)
+  formData.append('locationName', params.locationName)
+  if (params.logoFile) {
+    formData.append('logo', params.logoFile)
+  }
+
+  const response = await fetch(`${API_BASE}/deploy/brand`, {
+    method: 'POST',
+    headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {},
+    body: formData
+  })
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error((data as ApiError).error || 'Deployment failed')
+  }
+
+  return data as { success: boolean; brandUrl: string; filesCreated: string[] }
+}

@@ -10,6 +10,7 @@ import { handleStoreConfig } from './routes/stores'
 import { handleMenu, handleMenuSave, handleMenuUpload } from './routes/menus'
 import { handleVersions } from './routes/versions'
 import { handleImageUpload } from './routes/images'
+import { handleDeployBrand } from './routes/deploy'
 
 export interface Env {
   MENU_BUCKET: R2Bucket
@@ -83,8 +84,8 @@ export default {
         if (request.method === 'PUT') {
           const menuMatch = path.match(/^\/api\/menus\/([^/]+)\/([^/]+)\/([^/]+)$/)
           if (menuMatch) {
-            // Enforce tenant isolation
-            if (menuMatch[1] !== auth.brandSlug) {
+            // Enforce tenant isolation (super-admin can access any brand)
+            if (menuMatch[1] !== auth.brandSlug && !auth.isSuperAdmin) {
               return json({ error: 'Forbidden: brand mismatch' }, 403)
             }
             return handleMenuSave(request, env, auth, menuMatch[1], menuMatch[2], menuMatch[3])
@@ -95,7 +96,7 @@ export default {
         if (request.method === 'POST') {
           const uploadMatch = path.match(/^\/api\/menus\/([^/]+)\/([^/]+)\/([^/]+)\/upload$/)
           if (uploadMatch) {
-            if (uploadMatch[1] !== auth.brandSlug) {
+            if (uploadMatch[1] !== auth.brandSlug && !auth.isSuperAdmin) {
               return json({ error: 'Forbidden: brand mismatch' }, 403)
             }
             return handleMenuUpload(request, env, auth, uploadMatch[1], uploadMatch[2], uploadMatch[3])
@@ -104,10 +105,15 @@ export default {
           // POST /api/images/:brand - upload image
           const imageMatch = path.match(/^\/api\/images\/([^/]+)$/)
           if (imageMatch) {
-            if (imageMatch[1] !== auth.brandSlug) {
+            if (imageMatch[1] !== auth.brandSlug && !auth.isSuperAdmin) {
               return json({ error: 'Forbidden: brand mismatch' }, 403)
             }
             return handleImageUpload(request, env, auth, imageMatch[1])
+          }
+
+          // POST /api/deploy/brand - create new brand (super-admin only)
+          if (path === '/api/deploy/brand') {
+            return handleDeployBrand(request, env, auth)
           }
         }
       }

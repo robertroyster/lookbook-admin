@@ -17,7 +17,11 @@ import type { Env } from '../index'
 export interface AuthContext {
   brandSlug: string
   keyId: string
+  isSuperAdmin: boolean
 }
+
+// Super-admin token has full access including deployment
+const SUPER_ADMIN_TOKEN = 'P9WbmcPbSiNBtF1ZdhVYg2WS5ZIa6u9UkxVlSM6v'
 
 export interface AuthResult {
   success: boolean
@@ -67,6 +71,18 @@ export async function authenticate(request: Request, env: Env): Promise<AuthResu
     return { success: false, error: 'Invalid API key format' }
   }
 
+  // Check for super-admin token first
+  if (apiKey === SUPER_ADMIN_TOKEN) {
+    return {
+      success: true,
+      context: {
+        brandSlug: '*',
+        keyId: 'super_admin',
+        isSuperAdmin: true
+      }
+    }
+  }
+
   // Hash the provided key
   const keyHash = await hashKey(apiKey)
 
@@ -99,7 +115,8 @@ export async function authenticate(request: Request, env: Env): Promise<AuthResu
           success: true,
           context: {
             brandSlug,
-            keyId: matchedKey.id
+            keyId: matchedKey.id,
+            isSuperAdmin: false
           }
         }
       }

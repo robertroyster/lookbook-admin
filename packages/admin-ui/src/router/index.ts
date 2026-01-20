@@ -34,18 +34,27 @@ const router = createRouter({
       path: '/brands/:brand/:store/:menu',
       name: 'menu-detail',
       component: () => import('../views/MenuDetailView.vue')
+    },
+    {
+      path: '/deploy',
+      name: 'deploy-brand',
+      component: () => import('../views/DeployBrandView.vue'),
+      meta: { superAdminOnly: true }
     }
   ]
 })
 
 // Navigation guard for auth and brand access
 router.beforeEach((to, _from, next) => {
-  const { isAuthenticated, isAdmin, brandSlug } = useAuth()
+  const { isAuthenticated, isAdmin, isSuperAdmin, brandSlug } = useAuth()
 
   if (to.meta.public) {
     next()
   } else if (!isAuthenticated.value) {
     next('/login')
+  } else if (to.meta.superAdminOnly && !isSuperAdmin.value) {
+    // Super-admin only routes
+    next('/')
   } else if (isAdmin.value) {
     // Admins can access all brands
     next()

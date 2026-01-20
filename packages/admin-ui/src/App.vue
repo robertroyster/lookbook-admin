@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuth } from './lib/auth'
 
 const router = useRouter()
-const { isAuthenticated, isAdmin, logout, brandSlug } = useAuth()
+const { isAuthenticated, isAdmin, isSuperAdmin, logout, brandSlug } = useAuth()
 
 const showNav = computed(() => isAuthenticated.value)
 const brandLink = computed(() => {
@@ -12,7 +12,16 @@ const brandLink = computed(() => {
   return brandSlug.value ? `/brands/${brandSlug.value}` : '/brands'
 })
 const brandLinkText = computed(() => isAdmin.value ? 'All Brands' : 'My Brand')
-const badgeText = computed(() => isAdmin.value ? 'Admin' : brandSlug.value)
+const badgeText = computed(() => {
+  if (isSuperAdmin.value) return 'Super Admin'
+  if (isAdmin.value) return 'Admin'
+  return brandSlug.value
+})
+const badgeClass = computed(() => {
+  if (isSuperAdmin.value) return 'badge-super'
+  if (isAdmin.value) return 'badge-admin'
+  return ''
+})
 
 function handleLogout() {
   logout()
@@ -26,11 +35,12 @@ function handleLogout() {
       <div class="header-content container">
         <div class="flex gap-2" style="align-items: center;">
           <router-link to="/" class="logo">Lookbook Admin</router-link>
-          <span v-if="badgeText" class="badge" :class="{ 'badge-admin': isAdmin }">{{ badgeText }}</span>
+          <span v-if="badgeText" class="badge" :class="badgeClass">{{ badgeText }}</span>
         </div>
         <nav class="nav">
           <router-link to="/">Dashboard</router-link>
           <router-link :to="brandLink">{{ brandLinkText }}</router-link>
+          <router-link v-if="isSuperAdmin" to="/deploy" class="deploy-link">Deploy</router-link>
           <button @click="handleLogout" class="btn btn-secondary btn-sm">Logout</button>
         </nav>
       </div>
@@ -84,6 +94,10 @@ function handleLogout() {
 
 .badge-admin {
   background: var(--color-success);
+}
+
+.badge-super {
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
 }
 
 .nav {
