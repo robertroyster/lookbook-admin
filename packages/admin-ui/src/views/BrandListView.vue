@@ -18,7 +18,8 @@ onMounted(async () => {
     if (isAdmin.value) {
       brands.value = data.brands
     } else if (brandSlug.value) {
-      brands.value = data.brands.filter(b => b.slug === brandSlug.value)
+      const userBrand = brandSlug.value.toLowerCase()
+      brands.value = data.brands.filter(b => b.slug.toLowerCase() === userBrand)
     } else {
       brands.value = data.brands
     }

@@ -50,11 +50,12 @@ router.beforeEach((to, _from, next) => {
     // Admins can access all brands
     next()
   } else {
-    // Check brand access - users can only access their own brand
+    // Check brand access - users can only access their own brand (case-insensitive)
     const routeBrand = to.params.brand as string | undefined
-    if (routeBrand && brandSlug.value && routeBrand !== brandSlug.value) {
+    const userBrand = brandSlug.value?.toLowerCase()
+    if (routeBrand && userBrand && routeBrand.toLowerCase() !== userBrand) {
       // Redirect to their own brand equivalent route
-      const newPath = to.path.replace(`/brands/${routeBrand}`, `/brands/${brandSlug.value}`)
+      const newPath = to.path.replace(`/brands/${routeBrand}`, `/brands/${userBrand}`)
       next(newPath)
     } else {
       next()
