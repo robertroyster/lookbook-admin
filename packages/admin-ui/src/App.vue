@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from './lib/auth'
 
 const router = useRouter()
-const { isAuthenticated, logout, brandSlug } = useAuth()
+const route = useRoute()
+const { isAuthenticated, logout } = useAuth()
 
 const showNav = computed(() => isAuthenticated.value)
+const currentBrand = computed(() => route.params.brand as string | undefined)
 
 function handleLogout() {
   logout()
@@ -20,7 +22,7 @@ function handleLogout() {
       <div class="header-content container">
         <div class="flex gap-2" style="align-items: center;">
           <router-link to="/" class="logo">Lookbook Admin</router-link>
-          <span v-if="brandSlug" class="badge">{{ brandSlug }}</span>
+          <span v-if="currentBrand" class="badge">{{ currentBrand }}</span>
         </div>
         <nav class="nav">
           <router-link to="/">Dashboard</router-link>

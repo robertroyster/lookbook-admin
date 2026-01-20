@@ -9,6 +9,7 @@ import MenuItemCard from '../components/menus/MenuItemCard.vue'
 import MenuStats from '../components/menus/MenuStats.vue'
 import VersionHistory from '../components/versions/VersionHistory.vue'
 import MenuUpload from '../components/menus/MenuUpload.vue'
+import CategoryBar from '../components/menus/CategoryBar.vue'
 
 const route = useRoute()
 const brand = route.params.brand as string
@@ -108,6 +109,41 @@ function handleUploadSuccess(data: MenuData) {
   loadData() // Refresh versions
 }
 
+function handleScrollToCategory(category: string) {
+  const slug = category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+  const element = document.getElementById(`category-${slug}`)
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+function handleCategoryRename(oldName: string, newName: string) {
+  if (!menuData.value) return
+
+  for (const item of menuData.value.items) {
+    if (item.category === oldName) {
+      item.category = newName
+    }
+  }
+
+  // Also update categoryOrder if present
+  if (menuData.value.meta?.categoryOrder) {
+    const idx = menuData.value.meta.categoryOrder.indexOf(oldName)
+    if (idx !== -1) {
+      menuData.value.meta.categoryOrder[idx] = newName
+    }
+  }
+}
+
+function handleCategoryReorder(newOrder: string[]) {
+  if (!menuData.value) return
+  menuData.value.meta = { ...menuData.value.meta, categoryOrder: newOrder }
+}
+
+function slugify(text: string): string {
+  return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+}
+
 onMounted(loadData)
 </script>
 
@@ -171,12 +207,26 @@ onMounted(loadData)
         class="mb-3"
       />
 
+      <CategoryBar
+        v-if="!showJson"
+        :categories="categories"
+        @scroll-to="handleScrollToCategory"
+        @rename="handleCategoryRename"
+        @reorder="handleCategoryReorder"
+        class="mb-3"
+      />
+
       <MenuStats v-if="!showJson" :menu="menuData" class="mb-3" />
 
       <JsonViewer v-if="showJson" :data="menuData" title="Menu JSON" class="mb-3" />
 
       <template v-if="!showJson">
-        <div v-for="[category, items] in categories" :key="category" class="category mb-3">
+        <div
+          v-for="[category, items] in categories"
+          :key="category"
+          :id="`category-${slugify(category)}`"
+          class="category mb-3"
+        >
           <h2 class="category-title font-medium mb-2">{{ category }}</h2>
           <div class="items-grid grid grid-2">
             <MenuItemCard
