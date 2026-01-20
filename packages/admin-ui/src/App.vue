@@ -4,10 +4,15 @@ import { useRouter } from 'vue-router'
 import { useAuth } from './lib/auth'
 
 const router = useRouter()
-const { isAuthenticated, logout, brandSlug } = useAuth()
+const { isAuthenticated, isAdmin, logout, brandSlug } = useAuth()
 
 const showNav = computed(() => isAuthenticated.value)
-const brandLink = computed(() => brandSlug.value ? `/brands/${brandSlug.value}` : '/brands')
+const brandLink = computed(() => {
+  if (isAdmin.value) return '/brands'
+  return brandSlug.value ? `/brands/${brandSlug.value}` : '/brands'
+})
+const brandLinkText = computed(() => isAdmin.value ? 'All Brands' : 'My Brand')
+const badgeText = computed(() => isAdmin.value ? 'Admin' : brandSlug.value)
 
 function handleLogout() {
   logout()
@@ -21,11 +26,11 @@ function handleLogout() {
       <div class="header-content container">
         <div class="flex gap-2" style="align-items: center;">
           <router-link to="/" class="logo">Lookbook Admin</router-link>
-          <span v-if="brandSlug" class="badge">{{ brandSlug }}</span>
+          <span v-if="badgeText" class="badge" :class="{ 'badge-admin': isAdmin }">{{ badgeText }}</span>
         </div>
         <nav class="nav">
           <router-link to="/">Dashboard</router-link>
-          <router-link :to="brandLink">My Brand</router-link>
+          <router-link :to="brandLink">{{ brandLinkText }}</router-link>
           <button @click="handleLogout" class="btn btn-secondary btn-sm">Logout</button>
         </nav>
       </div>
@@ -75,6 +80,10 @@ function handleLogout() {
   font-size: 0.75rem;
   font-weight: 500;
   text-transform: uppercase;
+}
+
+.badge-admin {
+  background: var(--color-success);
 }
 
 .nav {

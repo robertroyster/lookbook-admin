@@ -40,12 +40,15 @@ const router = createRouter({
 
 // Navigation guard for auth and brand access
 router.beforeEach((to, _from, next) => {
-  const { isAuthenticated, brandSlug } = useAuth()
+  const { isAuthenticated, isAdmin, brandSlug } = useAuth()
 
   if (to.meta.public) {
     next()
   } else if (!isAuthenticated.value) {
     next('/login')
+  } else if (isAdmin.value) {
+    // Admins can access all brands
+    next()
   } else {
     // Check brand access - users can only access their own brand
     const routeBrand = to.params.brand as string | undefined

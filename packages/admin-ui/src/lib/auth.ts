@@ -8,6 +8,7 @@ const brandSlug = ref<string | null>(localStorage.getItem(BRAND_SLUG_STORAGE_KEY
 
 export function useAuth() {
   const isAuthenticated = computed(() => !!apiKey.value)
+  const isAdmin = computed(() => brandSlug.value === '*')
 
   function login(key: string, brand: string) {
     apiKey.value = key
@@ -29,6 +30,7 @@ export function useAuth() {
 
   return {
     isAuthenticated,
+    isAdmin,
     apiKey,
     brandSlug,
     login,

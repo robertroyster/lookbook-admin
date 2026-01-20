@@ -6,7 +6,7 @@ import LoadingSpinner from '../components/shared/LoadingSpinner.vue'
 import ErrorBanner from '../components/shared/ErrorBanner.vue'
 import BrandCard from '../components/brands/BrandCard.vue'
 
-const { brandSlug } = useAuth()
+const { brandSlug, isAdmin } = useAuth()
 const brands = ref<Brand[]>([])
 const loading = ref(true)
 const error = ref('')
@@ -14,8 +14,10 @@ const error = ref('')
 onMounted(async () => {
   try {
     const data = await getBrands()
-    // Filter to only show the user's brand
-    if (brandSlug.value) {
+    // Admins see all brands, regular users only see their own
+    if (isAdmin.value) {
+      brands.value = data.brands
+    } else if (brandSlug.value) {
       brands.value = data.brands.filter(b => b.slug === brandSlug.value)
     } else {
       brands.value = data.brands
