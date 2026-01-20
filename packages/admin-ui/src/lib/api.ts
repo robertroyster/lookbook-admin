@@ -192,6 +192,34 @@ export interface DeployBrandRequest {
   logoFile?: File | null
 }
 
+export interface DeployLocationRequest {
+  brandSlug: string
+  locationSlug: string
+  locationName: string
+}
+
+export async function deployLocation(params: DeployLocationRequest) {
+  const { getApiKey } = useAuth()
+  const apiKey = getApiKey()
+
+  const response = await fetch(`${API_BASE}/deploy/location`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {})
+    },
+    body: JSON.stringify(params)
+  })
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error((data as ApiError).error || 'Deployment failed')
+  }
+
+  return data as { success: boolean; locationUrl: string; filesCreated: string[] }
+}
+
 export async function deployBrand(params: DeployBrandRequest) {
   const { getApiKey } = useAuth()
   const apiKey = getApiKey()

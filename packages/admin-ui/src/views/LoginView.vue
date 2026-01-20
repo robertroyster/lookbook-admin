@@ -27,9 +27,10 @@ async function handleSubmit() {
 
   try {
     // Store the credentials
-    login(apiKey.value.trim(), brandSlug.value.trim())
+    const brand = brandSlug.value.trim()
+    login(apiKey.value.trim(), brand)
 
-    // Navigate to dashboard
+    // Navigate to brands (home)
     router.push('/')
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Login failed'

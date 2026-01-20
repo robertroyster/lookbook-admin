@@ -10,7 +10,7 @@ import { handleStoreConfig } from './routes/stores'
 import { handleMenu, handleMenuSave, handleMenuUpload } from './routes/menus'
 import { handleVersions } from './routes/versions'
 import { handleImageUpload } from './routes/images'
-import { handleDeployBrand } from './routes/deploy'
+import { handleDeployBrand, handleDeployLocation } from './routes/deploy'
 
 export interface Env {
   MENU_BUCKET: R2Bucket
@@ -114,6 +114,11 @@ export default {
           // POST /api/deploy/brand - create new brand (super-admin only)
           if (path === '/api/deploy/brand') {
             return handleDeployBrand(request, env, auth)
+          }
+
+          // POST /api/deploy/location - create new location (super-admin only)
+          if (path === '/api/deploy/location') {
+            return handleDeployLocation(request, env, auth)
           }
         }
       }

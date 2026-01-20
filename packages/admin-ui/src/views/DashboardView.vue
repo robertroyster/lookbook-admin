@@ -19,14 +19,17 @@ const totalStores = computed(() => {
   return 0
 })
 
+const isAdmin = computed(() => brandSlug.value === '*')
+const displayBrand = computed(() => isAdmin.value ? 'Admin' : brandSlug.value)
+
 onMounted(async () => {
   try {
     // Fetch all brands for context
     const brandsData = await getBrands()
     brands.value = brandsData.brands
 
-    // Fetch registry for the authenticated brand
-    if (brandSlug.value) {
+    // Fetch registry for the authenticated brand (skip for admin mode)
+    if (brandSlug.value && !isAdmin.value) {
       registry.value = await getBrandRegistry(brandSlug.value)
     }
   } catch (e) {
@@ -55,7 +58,7 @@ onMounted(async () => {
           <div class="stat-label text-muted">Your Stores</div>
         </div>
         <div class="stat card">
-          <div class="stat-value">{{ brandSlug }}</div>
+          <div class="stat-value">{{ displayBrand }}</div>
           <div class="stat-label text-muted">Current Brand</div>
         </div>
       </div>
@@ -63,11 +66,11 @@ onMounted(async () => {
       <div class="quick-links card">
         <h2 class="font-medium mb-2">Quick Actions</h2>
         <div class="links">
-          <router-link :to="`/brands/${brandSlug}`" class="link-card">
+          <router-link v-if="!isAdmin" :to="`/brands/${brandSlug}`" class="link-card">
             <span class="link-icon">📋</span>
             <span>View Your Stores</span>
           </router-link>
-          <router-link to="/brands" class="link-card">
+          <router-link to="/" class="link-card">
             <span class="link-icon">🏪</span>
             <span>Browse All Brands</span>
           </router-link>

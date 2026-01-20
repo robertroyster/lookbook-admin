@@ -29,7 +29,7 @@ onMounted(async () => {
 <template>
   <div class="container">
     <div class="breadcrumb text-muted text-sm mb-2">
-      <router-link to="/brands">Brands</router-link>
+      <router-link to="/">Brands</router-link>
       <span> / </span>
       <router-link :to="`/brands/${brand}`">{{ brand }}</router-link>
       <span> / </span>

@@ -12,6 +12,28 @@ Admin system for managing photo-first restaurant menus. JSON is the source of tr
 - `menumanager` - Public bucket (customer-facing menus)
 - `menumanager-internal` - Private bucket (tenants, versions, logs)
 
+## UI Navigation
+
+- `/` - Brands list (home page)
+- `/dashboard` - Stats dashboard (future: views, analytics)
+- `/brands/:brand` - Brand detail with stores
+- `/brands/:brand/:store` - Store detail with menus
+- `/brands/:brand/:store/:menu` - Menu editor with item grid
+- `/deploy` - Super-admin brand deployment
+
+## Key Features
+
+### Photo Capture (NEW)
+- Click any menu item → full-screen detail view
+- Tap image area → camera/file picker
+- Crop to 600x600 square
+- Upload to R2, auto-generates filename: `{category}__{item-slug}.jpg`
+
+### Admin Mode
+- Login with `*` as brand → access all brands
+- Shows "Admin" badge in nav
+- Can browse and edit any brand's menus
+
 ## Architecture
 
 ```

@@ -10,6 +10,8 @@ import MenuStats from '../components/menus/MenuStats.vue'
 import VersionHistory from '../components/versions/VersionHistory.vue'
 import MenuUpload from '../components/menus/MenuUpload.vue'
 import CategoryBar from '../components/menus/CategoryBar.vue'
+import ItemDetailView from '../components/menus/ItemDetailView.vue'
+import type { MenuItem } from '../lib/api'
 
 const route = useRoute()
 const brand = route.params.brand as string
@@ -27,6 +29,7 @@ const showJson = ref(false)
 const showVersions = ref(false)
 const showUpload = ref(false)
 const editingItem = ref<string | null>(null)
+const selectedItem = ref<MenuItem | null>(null)
 
 const categories = computed(() => {
   if (!menuData.value) return []
@@ -144,13 +147,28 @@ function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 }
 
+function handleItemSelect(item: MenuItem) {
+  selectedItem.value = item
+}
+
+function handleItemDetailSave(updates: Partial<MenuItem>) {
+  if (!selectedItem.value) return
+  handleItemUpdate(selectedItem.value.id, updates)
+  selectedItem.value = null
+}
+
+function handleItemDetailImageUpdate(filename: string) {
+  if (!selectedItem.value) return
+  handleItemUpdate(selectedItem.value.id, { image: filename })
+}
+
 onMounted(loadData)
 </script>
 
 <template>
   <div class="container">
     <div class="breadcrumb text-muted text-sm mb-2">
-      <router-link to="/brands">Brands</router-link>
+      <router-link to="/">Brands</router-link>
       <span> / </span>
       <router-link :to="`/brands/${brand}`">{{ brand }}</router-link>
       <span> / </span>
@@ -238,10 +256,21 @@ onMounted(loadData)
               @edit="editingItem = item.id"
               @cancel="editingItem = null"
               @save="(updates) => handleItemUpdate(item.id, updates)"
+              @select="handleItemSelect"
             />
           </div>
         </div>
       </template>
+
+      <!-- Full-screen item detail view -->
+      <ItemDetailView
+        v-if="selectedItem"
+        :item="selectedItem"
+        :brand="brand"
+        @close="selectedItem = null"
+        @save="handleItemDetailSave"
+        @imageUpdate="handleItemDetailImageUpdate"
+      />
     </template>
   </div>
 </template>

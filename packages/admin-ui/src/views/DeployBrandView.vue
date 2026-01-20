@@ -189,7 +189,7 @@ async function handleDeploy() {
       </div>
 
       <div class="actions">
-        <router-link to="/brands" class="btn btn-secondary">Cancel</router-link>
+        <router-link to="/" class="btn btn-secondary">Cancel</router-link>
         <button
           @click="handleDeploy"
           class="btn btn-primary"

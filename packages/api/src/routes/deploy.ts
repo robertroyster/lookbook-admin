@@ -198,6 +198,139 @@ export async function handleDeployBrand(
   }
 }
 
+interface DeployLocationRequest {
+  brandSlug: string
+  locationSlug: string
+  locationName: string
+}
+
+/**
+ * POST /api/deploy/location
+ * Creates a new location for an existing brand
+ */
+export async function handleDeployLocation(
+  request: Request,
+  env: Env,
+  auth: AuthContext
+): Promise<Response> {
+  // Only super-admins can deploy
+  if (!auth.isSuperAdmin) {
+    return json({ error: 'Forbidden: super-admin access required' }, 403)
+  }
+
+  try {
+    const body: DeployLocationRequest = await request.json()
+
+    const brandSlug = body.brandSlug?.trim().toLowerCase()
+    const locationSlug = body.locationSlug?.trim().toLowerCase()
+    const locationName = body.locationName?.trim()
+
+    // Validate required fields
+    if (!brandSlug || !locationSlug || !locationName) {
+      return json({ error: 'Missing required fields' }, 400)
+    }
+
+    // Validate slug (alphanumeric only)
+    if (!/^[a-z0-9]+$/.test(locationSlug)) {
+      return json({ error: 'Location slug must be lowercase alphanumeric only' }, 400)
+    }
+
+    // Check if brand exists
+    const registryFile = await env.MENU_BUCKET.get(`${brandSlug}/registry.json`)
+    if (!registryFile) {
+      return json({ error: `Brand "${brandSlug}" not found` }, 404)
+    }
+
+    const registry = await registryFile.json() as {
+      brand: { slug: string; name: string }
+      defaultStore: string
+      stores: Array<{ slug: string; name: string; file: string }>
+      paths: { images: string; placeholder: string }
+    }
+
+    // Check if location already exists
+    const existingStore = registry.stores.find(s => s.slug === locationSlug)
+    if (existingStore) {
+      return json({ error: `Location "${locationSlug}" already exists` }, 409)
+    }
+
+    const filesCreated: string[] = []
+
+    // 1. Create store config
+    const storeConfig = {
+      slug: locationSlug,
+      name: `${registry.brand.name} ${locationName}`,
+      menus: [
+        {
+          id: 'dinner',
+          label: 'Dinner',
+          file: `${brandSlug}/${locationSlug}__dinner.json`
+        }
+      ]
+    }
+
+    await env.MENU_BUCKET.put(
+      `${brandSlug}/${locationSlug}.json`,
+      JSON.stringify(storeConfig, null, 2),
+      { httpMetadata: { contentType: 'application/json' } }
+    )
+    filesCreated.push(`${brandSlug}/${locationSlug}.json`)
+
+    // 2. Create initial menu
+    const initialMenu = {
+      meta: {
+        brand: brandSlug,
+        store: locationSlug,
+        menuType: 'dinner',
+        title: 'Dinner Menu',
+        categoryOrder: ['Appetizers', 'Entrees', 'Desserts']
+      },
+      items: [
+        {
+          id: 'sample-item-1',
+          name: 'Sample Item',
+          category: 'Appetizers',
+          price: '$9.99',
+          description: 'This is a sample menu item. Edit or replace this item.',
+          image: ''
+        }
+      ]
+    }
+
+    await env.MENU_BUCKET.put(
+      `${brandSlug}/${locationSlug}__dinner.json`,
+      JSON.stringify(initialMenu, null, 2),
+      { httpMetadata: { contentType: 'application/json' } }
+    )
+    filesCreated.push(`${brandSlug}/${locationSlug}__dinner.json`)
+
+    // 3. Update registry.json to add the new store
+    registry.stores.push({
+      slug: locationSlug,
+      name: locationName,
+      file: `${locationSlug}.json`
+    })
+
+    await env.MENU_BUCKET.put(
+      `${brandSlug}/registry.json`,
+      JSON.stringify(registry, null, 2),
+      { httpMetadata: { contentType: 'application/json' } }
+    )
+    filesCreated.push(`${brandSlug}/registry.json (updated)`)
+
+    return json({
+      success: true,
+      locationUrl: `/${brandSlug}/${locationSlug}`,
+      filesCreated,
+      message: `Location "${locationName}" created successfully for ${registry.brand.name}.`
+    })
+
+  } catch (error) {
+    console.error('Deploy location error:', error)
+    return json({ error: 'Deployment failed: ' + (error instanceof Error ? error.message : 'Unknown error') }, 500)
+  }
+}
+
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,

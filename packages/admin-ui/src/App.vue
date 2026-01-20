@@ -8,10 +8,10 @@ const { isAuthenticated, isAdmin, isSuperAdmin, logout, brandSlug } = useAuth()
 
 const showNav = computed(() => isAuthenticated.value)
 const brandLink = computed(() => {
-  if (isAdmin.value) return '/brands'
-  return brandSlug.value ? `/brands/${brandSlug.value}` : '/brands'
+  if (isAdmin.value) return '/'
+  return brandSlug.value ? `/brands/${brandSlug.value}` : '/'
 })
-const brandLinkText = computed(() => isAdmin.value ? 'All Brands' : 'My Brand')
+const brandLinkText = computed(() => isAdmin.value ? 'Brands' : 'My Brand')
 const badgeText = computed(() => {
   if (isSuperAdmin.value) return 'Super Admin'
   if (isAdmin.value) return 'Admin'
@@ -38,8 +38,8 @@ function handleLogout() {
           <span v-if="badgeText" class="badge" :class="badgeClass">{{ badgeText }}</span>
         </div>
         <nav class="nav">
-          <router-link to="/">Dashboard</router-link>
           <router-link :to="brandLink">{{ brandLinkText }}</router-link>
+          <router-link to="/dashboard">Dashboard</router-link>
           <router-link v-if="isSuperAdmin" to="/deploy" class="deploy-link">Deploy</router-link>
           <button @click="handleLogout" class="btn btn-secondary btn-sm">Logout</button>
         </nav>

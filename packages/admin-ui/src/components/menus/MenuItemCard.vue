@@ -12,6 +12,7 @@ const emit = defineEmits<{
   edit: []
   cancel: []
   save: [updates: Partial<MenuItem>]
+  select: [item: MenuItem]
 }>()
 
 const R2_BASE = 'https://pub-ed2976f5bd484b6580754e1d1fef1856.r2.dev'
@@ -58,7 +59,11 @@ function getImageUrl(item: MenuItem): string | null {
 </script>
 
 <template>
-  <div class="item-card card" :class="{ editing }">
+  <div
+    class="item-card card"
+    :class="{ editing, clickable: !editing }"
+    @click="!editing && emit('select', item)"
+  >
     <div class="image-wrapper">
       <img
         v-if="getImageUrl(item)"
@@ -78,7 +83,7 @@ function getImageUrl(item: MenuItem): string | null {
           {{ item.description }}
         </div>
         <div class="item-id text-muted text-sm">ID: {{ item.id }}</div>
-        <button @click="emit('edit')" class="btn btn-secondary btn-sm edit-btn">
+        <button @click.stop="emit('edit')" class="btn btn-secondary btn-sm edit-btn">
           Edit
         </button>
       </template>
@@ -120,6 +125,19 @@ function getImageUrl(item: MenuItem): string | null {
 
 .item-card.editing {
   border-color: var(--color-primary);
+}
+
+.item-card.clickable {
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.item-card.clickable:hover {
+  border-color: var(--color-text-muted);
+}
+
+.item-card.clickable:active {
+  background: var(--color-bg);
 }
 
 .image-wrapper {
