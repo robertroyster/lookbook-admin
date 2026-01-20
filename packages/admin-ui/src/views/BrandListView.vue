@@ -13,17 +13,12 @@ const error = ref('')
 
 // Reactively filter brands based on auth state
 const brands = computed(() => {
-  console.log('Auth state:', { brandSlug: brandSlug.value, isAdmin: isAdmin.value })
-  console.log('All brands:', allBrands.value.map(b => b.slug))
-
   if (isAdmin.value) {
     return allBrands.value
   }
   if (brandSlug.value) {
     const userBrand = brandSlug.value.toLowerCase()
-    const filtered = allBrands.value.filter(b => b.slug.toLowerCase() === userBrand)
-    console.log('Filtered to:', filtered.map(b => b.slug))
-    return filtered
+    return allBrands.value.filter(b => b.slug.toLowerCase() === userBrand)
   }
   return allBrands.value
 })
