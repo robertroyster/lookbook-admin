@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from './lib/auth'
 
@@ -8,10 +8,27 @@ const route = useRoute()
 const { isAuthenticated, logout } = useAuth()
 
 const showNav = computed(() => isAuthenticated.value)
-const currentBrand = computed(() => route.params.brand as string | undefined)
+
+// Track the active brand - persists when navigating away
+const ACTIVE_BRAND_KEY = 'lookbook_active_brand'
+const activeBrand = ref<string | null>(localStorage.getItem(ACTIVE_BRAND_KEY))
+
+// Update active brand when URL brand changes
+watch(
+  () => route.params.brand as string | undefined,
+  (brand) => {
+    if (brand) {
+      activeBrand.value = brand
+      localStorage.setItem(ACTIVE_BRAND_KEY, brand)
+    }
+  },
+  { immediate: true }
+)
 
 function handleLogout() {
   logout()
+  activeBrand.value = null
+  localStorage.removeItem(ACTIVE_BRAND_KEY)
   router.push('/login')
 }
 </script>
@@ -22,7 +39,7 @@ function handleLogout() {
       <div class="header-content container">
         <div class="flex gap-2" style="align-items: center;">
           <router-link to="/" class="logo">Lookbook Admin</router-link>
-          <span v-if="currentBrand" class="badge">{{ currentBrand }}</span>
+          <span v-if="activeBrand" class="badge">{{ activeBrand }}</span>
         </div>
         <nav class="nav">
           <router-link to="/">Dashboard</router-link>
