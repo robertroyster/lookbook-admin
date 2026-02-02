@@ -1,0 +1,10 @@
+# Apify Integration
+APIFY_TOKEN=apify_api_xxxxxxxxxxxxxxxxxxxxx
+APIFY_TASK_ID=your-apify-task-id
+APIFY_WEBHOOK_SECRET=generate-a-random-secret-here
+
+# Supabase
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Copy this file to .dev.vars and fill in real values for local development

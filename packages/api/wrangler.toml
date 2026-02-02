@@ -14,8 +14,21 @@ binding = "INTERNAL_BUCKET"
 bucket_name = "menumanager-internal"
 preview_bucket_name = "menumanager-internal"
 
+# R2 bucket for raw scrape data
+[[r2_buckets]]
+binding = "SCRAPE_BUCKET"
+bucket_name = "lookbook-scrapes"
+preview_bucket_name = "lookbook-scrapes-dev"
+
 [vars]
 R2_PUBLIC_URL = "https://pub-ed2976f5bd484b6580754e1d1fef1856.r2.dev"
+
+# Apify and Supabase secrets (set via wrangler secret put)
+# APIFY_TOKEN = ""
+# APIFY_TASK_ID = ""
+# APIFY_WEBHOOK_SECRET = ""
+# SUPABASE_URL = ""
+# SUPABASE_SERVICE_ROLE_KEY = ""
 
 # Production route (uncomment when deploying)
 # [env.production]

@@ -90,6 +90,20 @@ pnpm deploy:api   # Deploy Worker
 pnpm deploy:ui    # Deploy to Pages
 ```
 
+## DoorDash Scraping Integration
+
+Scrape DoorDash menus via Apify and store as draft menus.
+
+**Endpoints:**
+- `POST /api/admin/scrape/dd` - Start scrape (super-admin only)
+- `POST /api/integrations/apify/webhook` - Receive Apify callbacks
+
+**Storage:**
+- R2: `lookbook-scrapes` bucket for raw payloads
+- Supabase: Normalized restaurant/menu data
+
+**See:** `/docs/apify-dd-ingestion.md` for full setup guide.
+
 ## v2 Upgrade Path (not implemented)
 
 - Cloudflare D1 for structured data

@@ -11,11 +11,24 @@ import { handleMenu, handleMenuSave, handleMenuUpload } from './routes/menus'
 import { handleVersions } from './routes/versions'
 import { handleImageUpload } from './routes/images'
 import { handleDeployBrand, handleDeployLocation } from './routes/deploy'
+import { handleStartScrape } from './routes/scrape'
+import { handleApifyWebhook } from './routes/webhook'
 
 export interface Env {
+  // R2 Buckets
   MENU_BUCKET: R2Bucket
   INTERNAL_BUCKET: R2Bucket
+  SCRAPE_BUCKET: R2Bucket
   R2_PUBLIC_URL: string
+
+  // Apify integration
+  APIFY_TOKEN: string
+  APIFY_TASK_ID: string
+  APIFY_WEBHOOK_SECRET: string
+
+  // Supabase
+  SUPABASE_URL: string
+  SUPABASE_SERVICE_ROLE_KEY: string
 }
 
 export interface RequestContext {
@@ -37,6 +50,11 @@ export default {
       // Health check (no auth)
       if (path === '/api/health') {
         return json({ status: 'ok', timestamp: new Date().toISOString() })
+      }
+
+      // Public webhook endpoint (validates its own secret)
+      if (request.method === 'POST' && path === '/api/integrations/apify/webhook') {
+        return handleApifyWebhook(request, env)
       }
 
       // Public read routes (no auth required)
@@ -119,6 +137,11 @@ export default {
           // POST /api/deploy/location - create new location (super-admin only)
           if (path === '/api/deploy/location') {
             return handleDeployLocation(request, env, auth)
+          }
+
+          // POST /api/admin/scrape/dd - start DoorDash scrape (super-admin only)
+          if (path === '/api/admin/scrape/dd') {
+            return handleStartScrape(request, env, auth)
           }
         }
       }
