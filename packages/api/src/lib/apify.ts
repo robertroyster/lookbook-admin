@@ -6,7 +6,7 @@ const APIFY_BASE_URL = 'https://api.apify.com/v2'
 
 export interface ApifyConfig {
   token: string
-  taskId: string
+  actorId: string  // Can be actor ID or task ID
 }
 
 export interface ApifyRunResponse {
@@ -91,14 +91,14 @@ export interface DoorDashScrapedStore {
 }
 
 /**
- * Start an Apify task run asynchronously
+ * Start an Apify actor run asynchronously
  */
 export async function startApifyTaskRun(
   config: ApifyConfig,
   input: { startUrls: Array<{ url: string }> },
   webhookUrl?: string
 ): Promise<{ runId: string; defaultDatasetId: string; status: string }> {
-  const url = new URL(`${APIFY_BASE_URL}/actor-tasks/${config.taskId}/runs`)
+  const url = new URL(`${APIFY_BASE_URL}/acts/${config.actorId}/runs`)
   url.searchParams.set('token', config.token)
 
   // Add webhook if provided

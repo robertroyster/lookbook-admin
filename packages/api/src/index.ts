@@ -23,7 +23,7 @@ export interface Env {
 
   // Apify integration
   APIFY_TOKEN: string
-  APIFY_TASK_ID: string
+  APIFY_ACTOR_ID: string
   APIFY_WEBHOOK_SECRET: string
 
   // Supabase

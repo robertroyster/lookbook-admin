@@ -37,7 +37,7 @@ export async function handleStartScrape(
   }
 
   // Validate environment variables
-  if (!env.APIFY_TOKEN || !env.APIFY_TASK_ID) {
+  if (!env.APIFY_TOKEN || !env.APIFY_ACTOR_ID) {
     return json({ error: 'Apify integration not configured' }, 500)
   }
 
@@ -72,11 +72,11 @@ export async function handleStartScrape(
       ? `${requestUrl.origin}/api/integrations/apify/webhook?secret=${env.APIFY_WEBHOOK_SECRET}`
       : undefined
 
-    // Start the Apify task run
+    // Start the Apify actor run
     const result = await startApifyTaskRun(
       {
         token: env.APIFY_TOKEN,
-        taskId: env.APIFY_TASK_ID
+        actorId: env.APIFY_ACTOR_ID
       },
       {
         startUrls: body.storeUrls.map(url => ({ url }))
