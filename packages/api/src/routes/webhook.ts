@@ -187,20 +187,36 @@ async function processSuccessfulRun(
 
 /**
  * Normalize and store a single store/restaurant
+ * Handles the specific format from the DoorDash Apify scraper
  */
 async function normalizeAndStoreStore(
   env: Env,
   supabase: ReturnType<typeof createSupabaseClient>,
   store: DoorDashScrapedStore
 ): Promise<{ restaurantCreated: boolean; claimCodeGenerated: boolean }> {
-  const sourceUrl = store.url
+  // Handle the actual Apify scraper format which has a 'restaurant' object
+  const restaurantInfo = (store as unknown as { restaurant?: {
+    id?: string
+    name?: string
+    location?: { address?: { street?: string; city?: string; state?: string; display_address?: string } }
+  }}).restaurant
 
-  if (!sourceUrl) {
-    throw new Error('Store has no URL')
+  // Construct URL from restaurant ID or use provided URL
+  let sourceUrl = store.url
+  if (!sourceUrl && restaurantInfo?.id) {
+    // Construct DoorDash URL from store ID
+    const slugName = (restaurantInfo.name || 'store').toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    sourceUrl = `https://www.doordash.com/store/${slugName}-${restaurantInfo.id}/`
   }
 
-  // Strip reviews before any storage
-  const strippedStore = stripReviews(store)
+  if (!sourceUrl) {
+    throw new Error('Store has no URL and no restaurant ID')
+  }
+
+  // Extract restaurant details from the nested structure
+  const storeName = restaurantInfo?.name || store.storeName || 'Unknown Restaurant'
+  const address = restaurantInfo?.location?.address || store.address
+  const storeId = restaurantInfo?.id || store.storeId
 
   // 1. Find or create restaurant
   let restaurantId: string
@@ -220,12 +236,12 @@ async function normalizeAndStoreStore(
   } else {
     // Create new restaurant
     const restaurantData = {
-      name: strippedStore.storeName || 'Unknown Restaurant',
-      address1: strippedStore.address?.street || null,
-      city: strippedStore.address?.city || null,
-      state: strippedStore.address?.state || null,
-      zip: strippedStore.address?.zipCode || null,
-      phone: strippedStore.phoneNumber || null,
+      name: storeName,
+      address1: address?.street || null,
+      city: address?.city || null,
+      state: address?.state || null,
+      zip: (address as { zipCode?: string })?.zipCode || null,
+      phone: store.phoneNumber || null,
       website: sourceUrl
     }
 
@@ -249,7 +265,7 @@ async function normalizeAndStoreStore(
       restaurant_id: restaurantId,
       source: 'doordash',
       source_url: sourceUrl,
-      external_id: strippedStore.storeId || null,
+      external_id: storeId || null,
       last_seen_at: new Date().toISOString()
     }).execute()
   }
@@ -282,39 +298,56 @@ async function normalizeAndStoreStore(
 
   const draftMenuId = (draftMenuResult.data as { id: string }).id
 
-  // 3. Process menu categories and items
-  const menuCategories = strippedStore.menuCategories || []
+  // 3. Extract menu categories from item_list_* keys (Apify scraper format)
+  interface ItemListCategory {
+    name?: string
+    items?: Array<{
+      name?: string
+      description?: string
+      price?: { amount?: number; display?: string } | string | number
+      images?: Array<{ url?: string }>
+      options?: unknown[]
+    }>
+    sort_order?: number
+  }
 
-  // If no menuCategories, try to extract from flat menu array
-  if (menuCategories.length === 0 && strippedStore.menu && strippedStore.menu.length > 0) {
-    // Group items by category
-    const categoryMap = new Map<string, DoorDashScrapedStore['menu']>()
-    for (const item of strippedStore.menu) {
-      const category = item.category || item.menuCategory || 'Uncategorized'
-      if (!categoryMap.has(category)) {
-        categoryMap.set(category, [])
+  const menuCategories: ItemListCategory[] = []
+  const storeData = store as unknown as Record<string, unknown>
+
+  // Find all item_list_* keys and extract categories
+  for (const key of Object.keys(storeData)) {
+    if (key.startsWith('item_list_') && storeData[key]) {
+      const category = storeData[key] as ItemListCategory
+      if (category.items && Array.isArray(category.items)) {
+        menuCategories.push(category)
       }
-      categoryMap.get(category)!.push(item)
     }
+  }
 
-    let position = 0
-    for (const [categoryName, categoryItems] of categoryMap) {
-      menuCategories.push({
-        name: categoryName,
-        items: categoryItems
-      })
+  // Sort by sort_order if available
+  menuCategories.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+
+  // Fallback to old format if no item_list_* found
+  if (menuCategories.length === 0 && store.menuCategories) {
+    for (const cat of store.menuCategories) {
+      menuCategories.push(cat as unknown as ItemListCategory)
     }
   }
 
   // Insert sections and items
   let sectionPosition = 0
   for (const category of menuCategories) {
+    // Clean up category name (remove underscores, capitalize)
+    const categoryName = (category.name || 'Uncategorized')
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, c => c.toUpperCase())
+
     const sectionResult = await supabase
       .from('draft_sections')
       .insert({
         draft_menu_id: draftMenuId,
         position: sectionPosition++,
-        name: category.name || 'Uncategorized'
+        name: categoryName
       })
       .select('id')
       .single()
@@ -332,19 +365,30 @@ async function normalizeAndStoreStore(
     let itemPosition = 0
 
     for (const item of categoryItems) {
-      const priceCents = parsePriceToCents(item.price)
+      // Handle price object format: { amount: 23.51, display: "$23.51" }
+      let priceCents: number | null = null
+      const priceData = item.price
+      if (priceData) {
+        if (typeof priceData === 'object' && 'amount' in priceData) {
+          priceCents = Math.round((priceData.amount || 0) * 100)
+        } else {
+          priceCents = parsePriceToCents(priceData as string | number)
+        }
+      }
+
+      // Get first image URL if available
+      const imageUrl = item.images?.[0]?.url || null
 
       await supabase.from('draft_items').insert({
         draft_section_id: sectionId,
         position: itemPosition++,
-        name: item.name || 'Unknown Item',
+        name: (item.name || 'Unknown Item').replace(/^!/, ''), // Remove leading ! from some items
         description: item.description || null,
         price_cents: priceCents,
-        image_url: item.imageUrl || null,
+        image_url: imageUrl,
         raw: {
           originalPrice: item.price,
-          options: item.options,
-          nutritionInfo: item.nutritionInfo
+          options: item.options
         }
       }).execute()
     }
